@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>three.js canvas - geometry - cube</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style>
+			body {
+				font-family: Monospace;
+				background-color: #f0f0f0;
+				margin: 0px;
+				overflow: hidden;
+			}
+		</style>
+	</head>
+	<body>
+
+		<script src="js/lib/three.js"></script>
+		<script src="js/physweb.js"></script>
+
+		<script src="js/lib/stats.min.js"></script>
+
+		<script>
+
+			var container, stats;
+
+			var camera, scene, renderer;
+
+			var player, planes;
+
+			let playerPosition = new THREE.Vector3( 100, 100, 100 );
+
+			var targetRotation = 0;
+			var targetRotationOnMouseDown = 0;
+
+			var mouseX = 0;
+			var mouseXOnMouseDown = 0;
+
+			var windowHalfX = window.innerWidth / 2;
+			var windowHalfY = window.innerHeight / 2;
+
+			var playerVelocity = {
+				x: 0,
+				y: -1,
+				z: 0,
+			};
+
+			init();
+			animate();
+
+			function init() {
+
+				container = document.createElement( 'div' );
+				document.body.appendChild( container );
+
+				var info = document.createElement( 'div' );
+				info.style.position = 'absolute';
+				info.style.top = '10px';
+				info.style.width = '100%';
+				info.style.textAlign = 'center';
+				info.innerHTML = 'Drag to spin the cube';
+				container.appendChild( info );
+
+				camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 1000 );
+				camera.position.x = 300
+				camera.position.y = 120;
+				camera.position.z = 300;
+				camera.lookAt(0,-60,0);
+
+				scene = new THREE.Scene();
+				scene.background = new THREE.Color( 0xf0f0f0 );
+
+				var geometry = new THREE.SphereGeometry( 20, 20, 20 );
+
+				var material = new THREE.MeshBasicMaterial( { color: 0x6644DD, overdraw: 0.5 });
+
+				player = new THREE.Mesh( geometry, material );
+				scene.add(player);
+
+				// Plane
+				planes = [];
+				for (let i = 0 ; i < 1; i++) {
+					const geometry = game.asteroid.generateAsteroid(THREE, 90);
+					//const geometry = new THREE.BoxGeometry(200, 200, 200);
+					geometry.rotateX( 0.7 * Math.PI );
+					//geometry.rotateY( Math.random() * 2 * Math.PI );
+					//geometry.translate( Math.random() * 300, -Math.random() * 80 - 21, Math.random() * 300);
+					geometry.translate( 80, -40, 100);
+
+					var material = new THREE.MeshStandardMaterial( { metalness: 0, shininess: 0, roughness: 1, color: 0xCB7080, overdraw: 0.5 } );
+
+					plane = new THREE.Mesh( geometry, material );
+					planes.push( plane );
+					scene.add( plane );
+					plane.geometry.verticesNeedUpdate = true;
+				}
+
+				//console.log(planes);
+
+				var directionalLight = new THREE.DirectionalLight(0xffffff);
+		        directionalLight.position.set(-40, 60, -10);
+		        //directionalLight.distance = 0;
+		        directionalLight.intensity = 2;
+		        scene.add(directionalLight);
+
+		        var ambientLight = new THREE.AmbientLight(0xbb44ff);
+		        ambientLight.intensity = 0.4;
+				scene.add(ambientLight);
+
+				renderer = new THREE.WebGLRenderer();
+				renderer.setPixelRatio( window.devicePixelRatio );
+				renderer.setSize( window.innerWidth, window.innerHeight );
+				container.appendChild( renderer.domElement );
+
+				stats = new Stats();
+				container.appendChild( stats.dom );
+
+				document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+				document.addEventListener( 'touchstart', onDocumentTouchStart, false );
+				document.addEventListener( 'touchmove', onDocumentTouchMove, false );
+
+				//
+
+				window.addEventListener( 'resize', onWindowResize, false );
+
+			}
+
+			function onWindowResize() {
+
+				windowHalfX = window.innerWidth / 2;
+				windowHalfY = window.innerHeight / 2;
+
+				camera.aspect = window.innerWidth / window.innerHeight;
+				camera.updateProjectionMatrix();
+
+				renderer.setSize( window.innerWidth, window.innerHeight );
+
+			}
+
+			//
+
+			function onDocumentMouseDown( event ) {
+
+				event.preventDefault();
+
+				document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+				document.addEventListener( 'mouseup', onDocumentMouseUp, false );
+				document.addEventListener( 'mouseout', onDocumentMouseOut, false );
+
+				mouseXOnMouseDown = event.clientX - windowHalfX;
+				targetRotationOnMouseDown = targetRotation;
+
+				playerVelocity.y = 1;
+				playerVelocity.x = 0;
+
+			}
+
+			function onDocumentMouseMove( event ) {
+
+				mouseX = event.clientX - windowHalfX;
+
+				targetRotation = targetRotationOnMouseDown + ( mouseX - mouseXOnMouseDown ) * 0.02;
+
+			}
+
+			function onDocumentMouseUp( event ) {
+
+				document.removeEventListener( 'mousemove', onDocumentMouseMove, false );
+				document.removeEventListener( 'mouseup', onDocumentMouseUp, false );
+				document.removeEventListener( 'mouseout', onDocumentMouseOut, false );
+
+				playerVelocity.x = 0;
+				playerVelocity.y = -1;
+
+			}
+
+			function onDocumentMouseOut( event ) {
+
+				document.removeEventListener( 'mousemove', onDocumentMouseMove, false );
+				document.removeEventListener( 'mouseup', onDocumentMouseUp, false );
+				document.removeEventListener( 'mouseout', onDocumentMouseOut, false );
+
+			}
+
+			function onDocumentTouchStart( event ) {
+
+				if ( event.touches.length === 1 ) {
+
+					event.preventDefault();
+
+					mouseXOnMouseDown = event.touches[ 0 ].pageX - windowHalfX;
+					targetRotationOnMouseDown = targetRotation;
+
+				}
+
+			}
+
+			function onDocumentTouchMove( event ) {
+
+				if ( event.touches.length === 1 ) {
+
+					event.preventDefault();
+
+					mouseX = event.touches[ 0 ].pageX - windowHalfX;
+					targetRotation = targetRotationOnMouseDown + ( mouseX - mouseXOnMouseDown ) * 0.05;
+
+				}
+
+			}
+
+			//
+
+			function animate() {
+
+				requestAnimationFrame( animate );
+
+				stats.begin();
+				render();
+				stats.end();
+
+			}
+
+			function render() {
+
+				player.position.x = playerPosition.x;
+				player.position.y = playerPosition.y;
+				player.position.z = playerPosition.z;
+
+				function faceToTri(geometry) {
+					return geometry.faces.map(f => game.geom.triangle(
+						geometry.vertices[f.a],
+						geometry.vertices[f.b],
+						geometry.vertices[f.c],
+					));
+				}
+
+				var triangles = planes.reduce((res, plane) => res.concat(faceToTri(plane.geometry)), []);
+
+				playerPosition = game.phys.moveAndSlide(playerPosition, 20, playerVelocity,
+					triangles
+				);
+
+				renderer.render( scene, camera );
+
+			}
+
+		</script>
+
+	</body>
+</html>
