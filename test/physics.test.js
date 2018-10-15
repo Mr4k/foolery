@@ -13,7 +13,7 @@ const slideTestCandidates = [{
 ];
 
 for (let c of slideTestCandidates) {
-	test('test slide', async t => {
+	test('test slide', t => {
 		approxEqualV(t, phys.calculateSlide(c.velocity, c.t, c.tMax, c.normal), c.result);
 	});
 }
@@ -43,14 +43,14 @@ const moveAndSlideTestCandidates = [{
 			geom.vector(0, 4, 9),
 		)],
 		radius: 1,
-		result: geom.vector(1.5, 3, 1),
+		result: geom.vector(2, 3, 1),
 	},
 ];
 
 let i = 0;
 for (let c of moveAndSlideTestCandidates) {
 	i += 1;
-	test(`test move and slide #${i}`, async t => {
+	test(`test move and slide #${i}`, t => {
 		approxEqualV(t, phys.moveAndSlide(c.origin, c.radius, c.velocity, c.triangles), c.result, 0.001);
 	});
 }

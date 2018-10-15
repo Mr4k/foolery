@@ -146,11 +146,11 @@ function rayIntersectsPlane(origin, v, planeLike) {
 	return distToPlane / projTowardsPlane;
 }
 
-function coplanarPointInTriangle(pt, triangle) {
+function coplanarPointInTriangle(pt, triangle, epsilon = 0) {
 	for (let e of triangle.edges) {
 		const trueSide = dot(sub(e.testPoint, e.anchor), e.n);
 		const testSide = dot(sub(pt, e.anchor), e.n);
-		if (Math.sign(testSide) !== Math.sign(trueSide)) return false;
+		if (Math.sign(testSide) !== Math.sign(trueSide) && Math.abs(trueSide - testSide) >= epsilon) return false;
 	}
 	return true;
 }
@@ -290,20 +290,41 @@ function sphereHitsTriangle(origin, v, r, triangle) {
 
 function squaredDistToEdge(point, edgeLike) {
 	const newPoint = sub(point, edgeLike.anchor);
-	const proj = dot(newPoint, edgeLike.v);
+	let proj = dot(newPoint, edgeLike.v);
 
 	proj = Math.min(Math.max(0, proj), edgeLike.len);
 
-	const diff = sub(newPoint, scale(proj, edgeLike.v));
-	return dot(diff, diff);
+	const diff = sub(newPoint, scale(edgeLike.v, proj));
+	return {
+		dist: dot(diff, diff),
+		dir: normalize(diff),
+	};
 }
 
-/*function squaredDistToPlane(point, planeLike) {
-	const newPoint = sub(point, edgeLike.anchor);
-	const proj = scale(dot(newPoint, edgeLike.v), edgeLike.v);
+function squaredDistToTrianglePlane(point, triangle, epsilon = 0) {
+	const newPoint = sub(point, triangle.v1);
+	const proj = sub(newPoint, scale(triangle.normal, dot(newPoint, triangle.normal)));
 	const diff = sub(newPoint, proj);
-	return dot(diff, diff);
-}*/
+
+	if (coplanarPointInTriangle(add(proj, triangle.v1), triangle, epsilon)) return {
+		dist: dot(diff, diff),
+		dir: normalize(diff),
+	};
+
+	return;
+}
+
+function squaredDistToTriangle(point, triangle) {
+	const distToTri = squaredDistToTrianglePlane(point, triangle);
+	if (distToTri) return distToTri;
+
+	return triangle.edges.reduce((closest, e) => {
+		const res = squaredDistToEdge(point, e);
+		if (!closest || res.dist < closest.dist) return res;
+
+		return closest;
+	}, undefined);
+}
 
 module.exports = {
 	add,
@@ -312,6 +333,7 @@ module.exports = {
 	dot,
 	cross,
 	vector,
+	normalize,
 	triangle,
 	rayIntersectsPlane,
 	coplanarPointInTriangle,
@@ -320,6 +342,9 @@ module.exports = {
 	sphereHitsEdge,
 	sphereHitsPoint,
 	sphereHitsTriangle,
+	squaredDistToTriangle,
+	squaredDistToEdge,
+	squaredDistToTrianglePlane,
 }
 
 },{}],3:[function(require,module,exports){
@@ -368,10 +393,44 @@ function moveAndSlide(origin, radius, velocity, triangles, stepSize = 1, depth =
 	return moveAndSlide(move, radius, slide, triangles, stepSize, depth - 1);
 }
 
+// TODO this function could be wayyyy more efficient
+function calculateGravityDirection(origin, triangles, exclusionDist = 10) {
+	const grav = triangles.reduce((grav, tri) => {
+		let ret = geom.squaredDistToTrianglePlane(origin, tri, 0.1);
+		if (!ret) return grav;
+
+		const { dist, dir } = ret;
+
+		const rayOccluded = triangles.reduce((hits, tri) => {
+			if (!hits) return false;
+
+			// this function with with sphere radius 0 is a raycast
+			const intersection = geom.sphereHitsTrianglePlane(origin, dir, 0, tri);
+			if (intersection && intersection < dist) return false;
+
+			return hits;
+		});
+
+		if (rayOccluded) return grav;
+
+		if (dist < exclusionDist * exclusionDist) {
+			grav = geom.add(geom.scale(dir, 1.0/(1 + dist)), grav);
+		}
+
+		//console.log('dist', dist);
+
+		return grav;
+	}, geom.vector(0, 0, 0));
+	if (grav.x === 0 && grav.y === 0 && grav.z === 0) return grav;
+
+	return geom.scale(geom.normalize(grav), -1);
+}
+
 module.exports = {
 	calculateSlide,
 	moveAndSlide,
 	geom,
+	calculateGravityDirection,
 }
 
 },{"./geometry/triangle":2}]},{},[3])(3)

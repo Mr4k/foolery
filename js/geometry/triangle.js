@@ -96,11 +96,11 @@ function rayIntersectsPlane(origin, v, planeLike) {
 	return distToPlane / projTowardsPlane;
 }
 
-function coplanarPointInTriangle(pt, triangle) {
+function coplanarPointInTriangle(pt, triangle, epsilon = 0) {
 	for (let e of triangle.edges) {
 		const trueSide = dot(sub(e.testPoint, e.anchor), e.n);
 		const testSide = dot(sub(pt, e.anchor), e.n);
-		if (Math.sign(testSide) !== Math.sign(trueSide)) return false;
+		if (Math.sign(testSide) !== Math.sign(trueSide) && Math.abs(trueSide - testSide) >= epsilon) return false;
 	}
 	return true;
 }
@@ -240,20 +240,41 @@ function sphereHitsTriangle(origin, v, r, triangle) {
 
 function squaredDistToEdge(point, edgeLike) {
 	const newPoint = sub(point, edgeLike.anchor);
-	const proj = dot(newPoint, edgeLike.v);
+	let proj = dot(newPoint, edgeLike.v);
 
 	proj = Math.min(Math.max(0, proj), edgeLike.len);
 
-	const diff = sub(newPoint, scale(proj, edgeLike.v));
-	return dot(diff, diff);
+	const diff = sub(newPoint, scale(edgeLike.v, proj));
+	return {
+		dist: dot(diff, diff),
+		dir: normalize(diff),
+	};
 }
 
-/*function squaredDistToPlane(point, planeLike) {
-	const newPoint = sub(point, edgeLike.anchor);
-	const proj = scale(dot(newPoint, edgeLike.v), edgeLike.v);
+function squaredDistToTrianglePlane(point, triangle, epsilon = 0) {
+	const newPoint = sub(point, triangle.v1);
+	const proj = sub(newPoint, scale(triangle.normal, dot(newPoint, triangle.normal)));
 	const diff = sub(newPoint, proj);
-	return dot(diff, diff);
-}*/
+
+	if (coplanarPointInTriangle(add(proj, triangle.v1), triangle, epsilon)) return {
+		dist: dot(diff, diff),
+		dir: normalize(diff),
+	};
+
+	return;
+}
+
+function squaredDistToTriangle(point, triangle) {
+	const distToTri = squaredDistToTrianglePlane(point, triangle);
+	if (distToTri) return distToTri;
+
+	return triangle.edges.reduce((closest, e) => {
+		const res = squaredDistToEdge(point, e);
+		if (!closest || res.dist < closest.dist) return res;
+
+		return closest;
+	}, undefined);
+}
 
 module.exports = {
 	add,
@@ -262,6 +283,7 @@ module.exports = {
 	dot,
 	cross,
 	vector,
+	normalize,
 	triangle,
 	rayIntersectsPlane,
 	coplanarPointInTriangle,
@@ -270,4 +292,7 @@ module.exports = {
 	sphereHitsEdge,
 	sphereHitsPoint,
 	sphereHitsTriangle,
+	squaredDistToTriangle,
+	squaredDistToEdge,
+	squaredDistToTrianglePlane,
 }

@@ -28,7 +28,7 @@
 
 			var player, planes;
 
-			let playerPosition = new THREE.Vector3( 100, 100, 100 );
+			let playerPosition = new THREE.Vector3( 100, 140, 100 );
 
 			var targetRotation = 0;
 			var targetRotationOnMouseDown = 0;
@@ -41,7 +41,7 @@
 
 			var playerVelocity = {
 				x: 0,
-				y: -1,
+				y: -0.2,
 				z: 0,
 			};
 
@@ -79,13 +79,13 @@
 
 				// Plane
 				planes = [];
-				for (let i = 0 ; i < 1; i++) {
-					const geometry = game.asteroid.generateAsteroid(THREE, 90);
-					//const geometry = new THREE.BoxGeometry(200, 200, 200);
-					geometry.rotateX( 0.7 * Math.PI );
-					//geometry.rotateY( Math.random() * 2 * Math.PI );
-					//geometry.translate( Math.random() * 300, -Math.random() * 80 - 21, Math.random() * 300);
-					geometry.translate( 80, -40, 100);
+				for (let i = 0 ; i < 5; i++) {
+					//const geometry = game.asteroid.generateAsteroid(THREE, 50);
+					const geometry = new THREE.BoxGeometry(200, 200, 200);
+					geometry.rotateX( Math.random() * 2 * Math.PI  );
+					geometry.rotateY( Math.random() * 2 * Math.PI );
+					geometry.translate( Math.random() * 300, -Math.random() * 80 - 21, Math.random() * 300);
+					geometry.translate( 0, -40, 0);
 
 					var material = new THREE.MeshStandardMaterial( { metalness: 0, shininess: 0, roughness: 1, color: 0xCB7080, overdraw: 0.5 } );
 
@@ -150,8 +150,8 @@
 				mouseXOnMouseDown = event.clientX - windowHalfX;
 				targetRotationOnMouseDown = targetRotation;
 
-				playerVelocity.y = 1;
-				playerVelocity.x = 0;
+				//playerVelocity = game.geom.scale(playerVelocity, -1);
+				playerVelocity = game.geom.vector(0, 0, 0);
 
 			}
 
@@ -168,9 +168,6 @@
 				document.removeEventListener( 'mousemove', onDocumentMouseMove, false );
 				document.removeEventListener( 'mouseup', onDocumentMouseUp, false );
 				document.removeEventListener( 'mouseout', onDocumentMouseOut, false );
-
-				playerVelocity.x = 0;
-				playerVelocity.y = -1;
 
 			}
 
@@ -239,6 +236,12 @@
 				playerPosition = game.phys.moveAndSlide(playerPosition, 20, playerVelocity,
 					triangles
 				);
+
+				const grav = game.geom.scale(game.phys.calculateGravityDirection(playerPosition, triangles, 80), 0.1);
+				console.log('grav', grav);
+				playerVelocity = game.geom.add(playerVelocity, grav);
+				const magPlayerVelocity = Math.min(Math.sqrt(game.geom.dot(playerVelocity, playerVelocity)), 4);
+				playerVelocity = game.geom.scale(game.geom.normalize(playerVelocity), magPlayerVelocity);
 
 				renderer.render( scene, camera );
 

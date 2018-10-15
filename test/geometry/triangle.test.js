@@ -115,7 +115,7 @@ const sphereHitsLineTestCandidates = [{
 ];
 
 for (let c of sphereHitsLineTestCandidates) {
-  test.only(`sphereIntersectsLine: sphere with origin (${c.origin.x}, ${c.origin.y}, ${c.origin.z})
+  test(`sphereIntersectsLine: sphere with origin (${c.origin.x}, ${c.origin.y}, ${c.origin.z})
      and velocity (${c.velocity.x}, ${c.velocity.y}, ${c.velocity.z}) does ${c.result ? 'not' : ''} 
      intersect line.`, t => {
     const lineLike = {
@@ -186,5 +186,53 @@ for (let c of sphereHitsPointTestCandidates) {
     }
 
     t.deepEqual(geom.sphereHitsPoint(c.origin, c.velocity, c.radius, pointLike), c.result);
+  });
+}
+
+const distToEdgeTestCandidates = [{
+    point: geom.vector(1, 1, 2),
+    result: {
+      dist: 4,
+      dir: geom.vector(0, 0, 1),
+    },
+  }, 
+];
+
+for (let c of distToEdgeTestCandidates) {
+  test(`squaredDistToEdge: sphere with origin (${c.point.x}, ${c.point.y}, ${c.point.z})`, t => {
+    const edgeLike = {
+      anchor: geom.vector(0, 1, 0),
+      v: geom.vector(1, 0, 0),
+      len: 5,
+    }
+
+    t.deepEqual(geom.squaredDistToEdge(c.point, edgeLike), c.result);
+  });
+}
+
+const distToTriangleTestCandidates = [{
+    point: geom.vector(1.25, 1.25, 2),
+    result: {
+      dist: 4,
+      dir: geom.vector(0, 0, 1),
+    },
+  }, {
+    point: geom.vector(-4, 1, 0),
+    result: {
+      dist: 25,
+      dir: geom.vector(-1, 0, 0),
+    },
+  }
+];
+
+for (let c of distToTriangleTestCandidates) {
+  test(`squaredDistToTriangle: sphere with origin (${c.point.x}, ${c.point.y}, ${c.point.z})`, t => {
+    const v1 = geom.vector(1,1,0);
+    const v2 = geom.vector(2,1,0);
+    const v3 = geom.vector(1,2,0);
+
+    const triangle = geom.triangle(v1, v2, v3);
+
+    t.deepEqual(geom.squaredDistToTriangle(c.point, triangle), c.result);
   });
 }
