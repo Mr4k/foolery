@@ -6,7 +6,7 @@ function calculateSlide(velocity, t, tMax, normal) {
 	return geom.add(scaledV, geom.scale(normal, -geom.dot(scaledV, normal)));
 }
 
-function moveAndSlide(origin, radius, velocity, triangles, stepSize = 1, depth = 3) {
+function moveAndSlide(origin, radius, velocity, triangles, stepSize = 1, depth = 3, kineticFriction = 0.5) {
 	if (depth === 0) return origin;
 
 	let minT = 10000000000;
@@ -29,16 +29,23 @@ function moveAndSlide(origin, radius, velocity, triangles, stepSize = 1, depth =
 
 	const slide = calculateSlide(velocity, minT, stepSize, minN);
 
-	return moveAndSlide(move, radius, slide, triangles, stepSize, depth - 1);
+	// TODO I'm sure this part could be improved / moved
+	// also test this
+	const normalForceMag = Math.abs(geom.dot(minN, velocity)) * (1 - minT);
+	const postFrictionSlide = geom.scale(slide, Math.max(Math.sqrt(geom.dot(slide, slide)) - normalForceMag * kineticFriction, 0));
+
+	return moveAndSlide(move, radius, postFrictionSlide, triangles, stepSize, depth - 1);
 }
 
 // TODO this function could be wayyyy more efficient
 function calculateGravityDirection(origin, triangles, exclusionDist = 10) {
 	const grav = triangles.reduce((grav, tri) => {
-		let ret = geom.squaredDistToTrianglePlane(origin, tri, 0.1);
+		let ret = geom.squaredDistToTriangle(origin, tri);
 		if (!ret) return grav;
 
 		const { dist, dir } = ret;
+
+		if (dist > exclusionDist * exclusionDist) return grav;
 
 		const rayOccluded = triangles.reduce((hits, tri) => {
 			if (!hits) return false;
@@ -52,17 +59,17 @@ function calculateGravityDirection(origin, triangles, exclusionDist = 10) {
 
 		if (rayOccluded) return grav;
 
-		if (dist < exclusionDist * exclusionDist) {
-			grav = geom.add(geom.scale(dir, 1.0/(1 + dist)), grav);
-		}
-
-		//console.log('dist', dist);
+		grav = geom.add(geom.scale(dir, 1.0/(1 + dist)), grav);
 
 		return grav;
 	}, geom.vector(0, 0, 0));
 	if (grav.x === 0 && grav.y === 0 && grav.z === 0) return grav;
 
 	return geom.scale(geom.normalize(grav), -1);
+}
+
+function getOrientationAxes(gravDir, up) {
+	
 }
 
 module.exports = {
