@@ -16,7 +16,7 @@
 	<body>
 
 		<script src="js/lib/three.js"></script>
-		<script src="js/physweb.js"></script>
+		<script src="dist/physics.js"></script>
 
 		<script src="js/lib/stats.min.js"></script>
 
@@ -78,8 +78,8 @@
 				scene.add(player);
 
 				// Plane
-				planes = [];
-				for (let i = 0 ; i < 5; i++) {
+				planes = [geometry];
+				/*for (let i = 0 ; i < 1; i++) {
 					//const geometry = game.asteroid.generateAsteroid(THREE, 50);
 					const geometry = new THREE.BoxGeometry(200, 200, 200);
 					geometry.rotateX( Math.random() * 2 * Math.PI  );
@@ -93,7 +93,7 @@
 					planes.push( plane );
 					scene.add( plane );
 					plane.geometry.verticesNeedUpdate = true;
-				}
+				}*/
 
 				//console.log(planes);
 
