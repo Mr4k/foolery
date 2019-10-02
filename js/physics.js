@@ -38,37 +38,42 @@ function moveAndSlide(origin, radius, velocity, triangles, stepSize = 1, depth =
 }
 
 // TODO this function could be wayyyy more efficient
-function calculateGravityDirection(origin, triangles, exclusionDist = 10) {
-	const grav = triangles.reduce((grav, tri) => {
-		let ret = geom.squaredDistToTriangle(origin, tri);
-		if (!ret) return grav;
+function calculateGravityDirection(origin, triangles, exclusionDist = 100) {
+	const { grav, _minDist } = triangles.reduce(( { grav, minDist }, tri) => {
+		let ret = geom.squaredDistToTrianglePlane(origin, tri);
+		if (!ret) return { grav, minDist };
 
 		const { dist, dir } = ret;
 
-		if (dist > exclusionDist * exclusionDist) return grav;
+		if (dist > exclusionDist * exclusionDist || !dist) return { grav, minDist };
 
-		const rayOccluded = triangles.reduce((hits, tri) => {
+		if (dist > minDist) return { grav, minDist };
+
+		/*const rayOccluded = triangles.reduce((hits, tri) => {
 			if (!hits) return false;
 
-			// this function with with sphere radius 0 is a raycast
+			// this function with sphere radius 0 is a raycast
 			const intersection = geom.sphereHitsTrianglePlane(origin, dir, 0, tri);
 			if (intersection && intersection < dist) return false;
 
 			return hits;
 		});
 
-		if (rayOccluded) return grav;
+		if (rayOccluded) return grav;*/
 
-		grav = geom.add(geom.scale(dir, 1.0/(1 + dist)), grav);
+		//grav = geom.add(geom.scale(dir, 1.0/(1 + dist)), grav);
+		console.log(dir, dist);
+		grav = dir;
 
-		return grav;
-	}, geom.vector(0, 0, 0));
+		return { grav, minDist: dist };
+	}, { grav: geom.vector(0, 0, 0), minDist: 1000000 });
+	console.log(grav);
 	if (grav.x === 0 && grav.y === 0 && grav.z === 0) return grav;
 
 	return geom.scale(geom.normalize(grav), -1);
 }
 
-function getOrientationAxes(gravDir, up) {
+function getForward(gravDir, oldGravDir, oldFwd) {
 	
 }
 

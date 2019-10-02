@@ -16,11 +16,12 @@
 	<body>
 
 		<script src="js/lib/three.js"></script>
-		<script src="dist/physics.js"></script>
-
+		<script src="dist/index.js"></script>
 		<script src="js/lib/stats.min.js"></script>
 
 		<script>
+			const geom = game.geom;
+			const phys = game.phys;
 
 			var container, stats;
 
@@ -45,6 +46,24 @@
 				z: 0,
 			};
 
+			var lastPlayerDown = {
+				x: 0,
+				y: -1,
+				z: 0,
+			};
+
+			var lastPlayerForward = {
+				x: 1,
+				y: 0,
+				z: 0,
+			};
+
+			var forwardArrow = new THREE.ArrowHelper(new THREE.Vector3(
+				lastPlayerForward.x,
+				lastPlayerForward.y,
+				lastPlayerForward.z,
+			), playerPosition, 45, 10, 15);
+
 			init();
 			animate();
 
@@ -62,8 +81,8 @@
 				container.appendChild( info );
 
 				camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 1, 1000 );
-				camera.position.x = 300
-				camera.position.y = 120;
+				camera.position.x = 150
+				camera.position.y = 200;
 				camera.position.z = 300;
 				camera.lookAt(0,-60,0);
 
@@ -76,15 +95,17 @@
 
 				player = new THREE.Mesh( geometry, material );
 				scene.add(player);
+				scene.add(forwardArrow);
 
 				// Plane
-				planes = [geometry];
-				/*for (let i = 0 ; i < 1; i++) {
-					//const geometry = game.asteroid.generateAsteroid(THREE, 50);
-					const geometry = new THREE.BoxGeometry(200, 200, 200);
-					geometry.rotateX( Math.random() * 2 * Math.PI  );
+				planes = [];
+				for (let i = 0 ; i < 1; i++) {
+					//const geometry = asteroid.generateAsteroid(THREE, 50);
+					const geometry = new THREE.BoxGeometry(270, 270, 270);
+					//const geometry = new THREE.SphereGeometry( 190, 20, 20 );
+					/*geometry.rotateX( Math.random() * 2 * Math.PI  );
 					geometry.rotateY( Math.random() * 2 * Math.PI );
-					geometry.translate( Math.random() * 300, -Math.random() * 80 - 21, Math.random() * 300);
+					geometry.translate( Math.random() * 300, -Math.random() * 80 - 21, Math.random() * 300); */
 					geometry.translate( 0, -40, 0);
 
 					var material = new THREE.MeshStandardMaterial( { metalness: 0, shininess: 0, roughness: 1, color: 0xCB7080, overdraw: 0.5 } );
@@ -93,12 +114,12 @@
 					planes.push( plane );
 					scene.add( plane );
 					plane.geometry.verticesNeedUpdate = true;
-				}*/
+				}
 
 				//console.log(planes);
 
 				var directionalLight = new THREE.DirectionalLight(0xffffff);
-		        directionalLight.position.set(-40, 60, -10);
+		        directionalLight.position.set(40, -60, 10);
 		        //directionalLight.distance = 0;
 		        directionalLight.intensity = 2;
 		        scene.add(directionalLight);
@@ -150,8 +171,8 @@
 				mouseXOnMouseDown = event.clientX - windowHalfX;
 				targetRotationOnMouseDown = targetRotation;
 
-				//playerVelocity = game.geom.scale(playerVelocity, -1);
-				playerVelocity = game.geom.vector(0, 0, 0);
+				//playerVelocity = geom.scale(playerVelocity, -1);
+				//playerVelocity = geom.vector(0, 0, 0);
 
 			}
 
@@ -210,7 +231,6 @@
 			function animate() {
 
 				requestAnimationFrame( animate );
-
 				stats.begin();
 				render();
 				stats.end();
@@ -224,7 +244,7 @@
 				player.position.z = playerPosition.z;
 
 				function faceToTri(geometry) {
-					return geometry.faces.map(f => game.geom.triangle(
+					return geometry.faces.map(f => geom.triangle(
 						geometry.vertices[f.a],
 						geometry.vertices[f.b],
 						geometry.vertices[f.c],
@@ -233,15 +253,33 @@
 
 				var triangles = planes.reduce((res, plane) => res.concat(faceToTri(plane.geometry)), []);
 
-				playerPosition = game.phys.moveAndSlide(playerPosition, 20, playerVelocity,
+				playerPosition = phys.moveAndSlide(playerPosition, 20, playerVelocity,
 					triangles
 				);
 
-				const grav = game.geom.scale(game.phys.calculateGravityDirection(playerPosition, triangles, 80), 0.1);
-				console.log('grav', grav);
-				playerVelocity = game.geom.add(playerVelocity, grav);
-				const magPlayerVelocity = Math.min(Math.sqrt(game.geom.dot(playerVelocity, playerVelocity)), 4);
-				playerVelocity = game.geom.scale(game.geom.normalize(playerVelocity), magPlayerVelocity);
+				const down = phys.calculateGravityDirection(playerPosition, triangles, 80);
+				const grav = geom.scale(down, 0.01);
+				const axis = geom.cross(down, lastPlayerDown);
+				let forward = lastPlayerForward;
+				if (geom.dot(axis, axis) > 0.001) {
+					const angle = Math.acos(geom.dot(down, lastPlayerDown));
+					const newForward = new THREE.Vector3(forward.x, forward.y, forward.z);
+					newForward.applyAxisAngle(axis, angle);
+					console.log(newForward, 'nf');
+					console.log(geom.dot(newForward, down), 'ang');
+					console.log(geom.dot(lastPlayerForward, lastPlayerDown), 'old ang');
+					forward = { x: newForward.x, y: newForward.y, z: newForward.z };
+				}
+				var forwardArrow = new THREE.ArrowHelper(down, playerPosition, 45, 10, 15);
+				scene.add(forwardArrow);
+				//console.log('grav', grav);
+				playerVelocity = geom.add(playerVelocity, grav);
+				//playerVelocity = geom.add(playerVelocity, geom.scale(forward, 0.05));
+				//const magPlayerVelocity = Math.min(Math.sqrt(geom.dot(playerVelocity, playerVelocity)), 4);
+				//playerVelocity = geom.scale(geom.normalize(playerVelocity), magPlayerVelocity);
+
+				lastPlayerDown = down;
+				lastPlayerForward = forward;
 
 				renderer.render( scene, camera );
 

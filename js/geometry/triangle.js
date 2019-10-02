@@ -266,14 +266,16 @@ function squaredDistToTrianglePlane(point, triangle, epsilon = 0) {
 
 function squaredDistToTriangle(point, triangle) {
 	const distToTri = squaredDistToTrianglePlane(point, triangle);
-	if (distToTri) return distToTri;
 
-	return triangle.edges.reduce((closest, e) => {
+	const distanceToEdge = triangle.edges.reduce((closest, e) => {
 		const res = squaredDistToEdge(point, e);
 		if (!closest || res.dist < closest.dist) return res;
 
 		return closest;
-	}, undefined);
+	}, null);
+	
+	if (distToTri && distToTri.dist < distanceToEdge) return distToTri;
+	return distanceToEdge;
 }
 
 module.exports = {

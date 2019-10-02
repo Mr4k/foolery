@@ -3,7 +3,8 @@
 		"test": "ava"
 	},
 	"devDependencies": {
-		"ava": "1.0.0-beta.8"
+		"ava": "1.0.0-beta.8",
+		"cssnano": "^4.1.10"
 	},
 	"dependencies": {}
 }
