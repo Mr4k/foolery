@@ -39,7 +39,6 @@ function moveAndSlide(origin, radius, velocity, triangles, stepSize = 1, depth =
 
 // TODO this function could be wayyyy more efficient
 function calculateGravityDirection(origin, triangles, exclusionDist = 100) {
-	console.log('start????');
 	const { grav, _minDist } = triangles.reduce(( { grav, minDist }, tri) => {
 		let ret = geom.squaredDistToTriangle(origin, tri);
 		if (!ret) return { grav, minDist };
@@ -48,7 +47,6 @@ function calculateGravityDirection(origin, triangles, exclusionDist = 100) {
 
 		if (dist > exclusionDist * exclusionDist || !dist) return { grav, minDist };
 
-		console.log(dist, dir);
 		if (dist > minDist) return { grav, minDist };
 
 		/*const rayOccluded = triangles.reduce((hits, tri) => {
@@ -68,7 +66,6 @@ function calculateGravityDirection(origin, triangles, exclusionDist = 100) {
 
 		return { grav, minDist: dist };
 	}, { grav: geom.vector(0, 0, 0), minDist: 1000000 });
-	console.log('end?!!?');
 	if (grav.x === 0 && grav.y === 0 && grav.z === 0) return grav;
 
 	return geom.scale(geom.normalize(grav), -1);

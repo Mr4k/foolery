@@ -274,7 +274,9 @@ function squaredDistToTriangle(point, triangle) {
 		return closest;
 	}, null);
 	
-	if (distToTri && distToTri.dist < distanceToEdge) return distToTri;
+	// TODO Peter is this really nessecary if there is a point on the plane shoudn't it always
+	// be closer than projection to an edge?
+	if (distToTri && (!distanceToEdge || distToTri.dist < distanceToEdge.dist)) return distToTri;
 	return distanceToEdge;
 }
 

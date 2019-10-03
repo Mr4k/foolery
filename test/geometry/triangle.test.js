@@ -226,7 +226,7 @@ const distToTriangleTestCandidates = [{
 ];
 
 for (let c of distToTriangleTestCandidates) {
-  test(`squaredDistToTriangle: sphere with origin (${c.point.x}, ${c.point.y}, ${c.point.z})`, t => {
+  test.only(`squaredDistToTriangle: sphere with origin (${c.point.x}, ${c.point.y}, ${c.point.z})`, t => {
     const v1 = geom.vector(1,1,0);
     const v2 = geom.vector(2,1,0);
     const v3 = geom.vector(1,2,0);
