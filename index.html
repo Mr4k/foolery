@@ -274,7 +274,7 @@
 				scene.add(forwardArrow);
 				//console.log('grav', grav);
 				playerVelocity = geom.add(playerVelocity, grav);
-				//playerVelocity = geom.add(playerVelocity, geom.scale(forward, 0.05));
+				playerVelocity = geom.add(playerVelocity, geom.scale(forward, 0.007));
 				//const magPlayerVelocity = Math.min(Math.sqrt(geom.dot(playerVelocity, playerVelocity)), 4);
 				//playerVelocity = geom.scale(geom.normalize(playerVelocity), magPlayerVelocity);
 
