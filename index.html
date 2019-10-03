@@ -64,6 +64,8 @@
 				lastPlayerForward.z,
 			), playerPosition, 45, 10, 15);
 
+			let forward = lastPlayerForward;
+
 			init();
 			animate();
 
@@ -173,6 +175,7 @@
 
 				//playerVelocity = geom.scale(playerVelocity, -1);
 				//playerVelocity = geom.vector(0, 0, 0);
+				playerVelocity = geom.scale(forward, 0.6);
 
 			}
 
@@ -259,9 +262,10 @@
 
 				const down = phys.calculateGravityDirection(playerPosition, triangles, 80);
 				const grav = geom.scale(down, 0.01);
-				const axis = geom.normalize(geom.cross(down, lastPlayerDown));
-				let forward = lastPlayerForward;
-				if (geom.dot(axis, axis) > 0.001) {
+				const rawAxis = geom.cross(down, lastPlayerDown);
+				forward = lastPlayerForward;
+				if (Math.abs(geom.dot(rawAxis, rawAxis)) > 0.0001) {
+					const axis = geom.normalize(rawAxis);
 					const angle = Math.acos(geom.dot(down, lastPlayerDown));
 					console.log(angle, 'ang between');
 					console.log(angle / Math.PI * 180, 'ang in deg');
@@ -272,8 +276,8 @@
 					console.log(Math.acos(geom.dot(newForward, forward)) / Math.PI * 180, 'delta ang to deg');
 					forward = { x: newForward.x, y: newForward.y, z: newForward.z };
 				}
-				var forwardArrow = new THREE.ArrowHelper(forward, playerPosition, 45, 10, 15);
-				scene.add(forwardArrow);
+				//var forwardArrow = new THREE.ArrowHelper(forward, playerPosition, 45, 10, 15);
+				//scene.add(forwardArrow);
 				//console.log('grav', grav);
 				playerVelocity = geom.add(playerVelocity, grav);
 				//playerVelocity = geom.add(playerVelocity, geom.scale(forward, 0.006));
