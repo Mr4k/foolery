@@ -50,6 +50,13 @@
 
 		let orientationController = game.orientationController.createOrientationController(THREE);
 
+		let keysDown = {
+			'ArrowUp': 0,
+			'ArrowDown': 0,
+			'ArrowLeft': 0,
+			'ArrowRight': 0,
+		};
+
 		init();
 		animate();
 
@@ -125,6 +132,7 @@
 			document.addEventListener('touchstart', onDocumentTouchStart, false);
 			document.addEventListener('touchmove', onDocumentTouchMove, false);
 			document.addEventListener('keydown', onDocumentKeyDown, false);
+			document.addEventListener('keyup', onDocumentKeyUp, false);
 
 			//
 
@@ -132,33 +140,13 @@
 
 		}
 
+		function onDocumentKeyUp(event) {
+			keysDown[event.key] = false;
+		}
+
 		function onDocumentKeyDown(event) {
 			console.log(event);
-			const MOVE_AXIS_AND_DIRS_FOR_KEY = {
-				'ArrowUp': {
-					axis: game.orientationController.ORIENTATION_DIRECTIONS.FORWARD,
-					dir : 1,
-				},
-				'ArrowDown': {
-					axis: game.orientationController.ORIENTATION_DIRECTIONS.FORWARD,
-					dir : -1,
-				},
-				'ArrowLeft': {
-					axis: game.orientationController.ORIENTATION_DIRECTIONS.LEFT,
-					dir : 1,
-				}, 
-				'ArrowRight': {
-					axis: game.orientationController.ORIENTATION_DIRECTIONS.LEFT,
-					dir : -1,
-				}
-			}
-			const moveAxisAndDir = MOVE_AXIS_AND_DIRS_FOR_KEY[event.key];
-			playerVelocity = geom.scale(
-				orientationController.getOrientation(
-					moveAxisAndDir.axis
-				),
-				0.5 * moveAxisAndDir.dir,
-			);
+			keysDown[event.key] = true;
 		}
 
 		function onWindowResize() {
@@ -188,7 +176,7 @@
 
 			//playerVelocity = geom.scale(playerVelocity, -1);
 			//playerVelocity = geom.vector(0, 0, 0);
-			
+
 
 		}
 
@@ -255,6 +243,41 @@
 
 		function render() {
 
+			const MOVE_AXIS_AND_DIRS_FOR_KEY = {
+				'ArrowUp': {
+					axis: game.orientationController.ORIENTATION_DIRECTIONS.FORWARD,
+					dir: 1,
+				},
+				'ArrowDown': {
+					axis: game.orientationController.ORIENTATION_DIRECTIONS.FORWARD,
+					dir: -1,
+				},
+				'ArrowLeft': {
+					axis: game.orientationController.ORIENTATION_DIRECTIONS.LEFT,
+					dir: 1,
+				},
+				'ArrowRight': {
+					axis: game.orientationController.ORIENTATION_DIRECTIONS.LEFT,
+					dir: -1,
+				}
+			}
+
+			const keys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
+			let keyAcceleration = undefined;
+			keys.forEach(key => {
+				// forEach breaks if false is returned
+				if (!keysDown[key]) return true;
+				keyAcceleration = keyAcceleration || { x: 0, y: 0, z: 0 };
+				const moveAxisAndDir = MOVE_AXIS_AND_DIRS_FOR_KEY[key];
+				keyAcceleration = geom.add(keyAcceleration, geom.scale(
+					orientationController.getOrientation(
+						moveAxisAndDir.axis
+					),
+					0.5 * moveAxisAndDir.dir,
+				));
+			});
+			playerVelocity = keyAcceleration || playerVelocity;
+
 			player.position.x = playerPosition.x;
 			player.position.y = playerPosition.y;
 			player.position.z = playerPosition.z;
@@ -269,9 +292,13 @@
 
 			var triangles = planes.reduce((res, plane) => res.concat(faceToTri(plane.geometry)), []);
 
-			playerPosition = phys.moveAndSlide(playerPosition, 20, playerVelocity,
-				triangles, 1, 3, 0.2,
+			const { newOrigin, totalNormalForce, totalFrictionForce } = phys.moveAndSlide(playerPosition, 20, playerVelocity,
+				triangles, 1, 3, 0.5,
 			);
+
+			playerPosition = newOrigin;
+			playerVelocity = geom.add(playerVelocity, totalNormalForce);
+			playerVelocity = geom.add(playerVelocity, totalFrictionForce);
 
 			const down = phys.calculateGravityDirection(playerPosition, triangles, 80);
 			const grav = geom.scale(down, 0.04);
