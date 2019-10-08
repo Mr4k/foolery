@@ -51,6 +51,6 @@ let i = 0;
 for (let c of moveAndSlideTestCandidates) {
 	i += 1;
 	test(`test move and slide #${i}`, t => {
-		approxEqualV(t, phys.moveAndSlide(c.origin, c.radius, c.velocity, c.triangles), c.result, 0.001);
+		approxEqualV(t, phys.moveAndSlide(c.origin, c.radius, c.velocity, c.triangles, 1, 3, 0).newOrigin, c.result, 0.001);
 	});
 }

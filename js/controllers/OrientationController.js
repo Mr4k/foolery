@@ -19,7 +19,7 @@ const ORIENTATION_DIRECTIONS = {
 }
 
 // TODO (Peter) replace the dependency on THREE.js for the axis angle rotations
-function createOrientationController(THREE) {
+function createOrientationController(THREE, stepAmount = 1) {
   const orientations = [
     { x: 1, y: 0, z: 0 },
     { x: 0, y: -1, z: 0 },
@@ -40,7 +40,7 @@ function createOrientationController(THREE) {
           orientation.x,
           orientation.y,
           orientation.z);
-				threeOrientationVector.applyAxisAngle(axis, -angle);
+				threeOrientationVector.applyAxisAngle(axis, -angle * stepAmount);
 				orientations[index] = {
           x: threeOrientationVector.x,
           y: threeOrientationVector.y,

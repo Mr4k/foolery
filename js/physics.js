@@ -33,7 +33,8 @@ function moveAndSlide(origin, radius, velocity, triangles, stepSize = 1, depth =
 	// also test this
 	const normalForceMag = Math.abs(geom.dot(minN, velocity)) * (1 - minT);
 	const updatedTotalNormalForce = geom.add(totalNormalForce, geom.scale(minN, normalForceMag));
-	
+
+	// TODO (Peter) did this get broken? check carefully what the magnitude of slide should be
 	const slideMag = Math.sqrt(geom.dot(slide, slide));
 	const frictionAmount = Math.max(slideMag - normalForceMag * kineticFriction, 0) / (slideMag === 0 ? 1 : slideMag);
 	const postFrictionSlide = geom.scale(slide, frictionAmount);
