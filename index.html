@@ -49,7 +49,7 @@
 		};
 
 		let orientationController = game.orientationController.createOrientationController(THREE);
-		let cameraOrientationController = game.orientationController.createOrientationController(THREE, 0.02);
+		let cameraOrientationController = game.orientationController.createOrientationController(THREE, 1);
 
 		let keysDown = {
 			'ArrowUp': 0,
@@ -92,14 +92,21 @@
 
 			// Plane
 			planes = [];
+			//const seed = Math.random() * 10;
+			const seed = 6.74990738282461;
+			console.log('seed', seed);
+
+			function fakeRand (offset) {
+				return (Math.sin(seed + offset) + 1) / 2;
+			}
 			for (let i = 0; i < 10; i++) {
 				//const geometry = asteroid.generateAsteroid(THREE, 50);
 				//const geometry = new THREE.BoxGeometry(270, 270, 270);
 				const geometry = new THREE.BoxGeometry(100, 100, 100);
 				//const geometry = new THREE.SphereGeometry( 190, 6, 6 );
-				geometry.rotateX( Math.random() * 2 * Math.PI  );
-				geometry.rotateY( Math.random() * 2 * Math.PI );
-				geometry.translate( Math.random() * 300, -Math.random() * 80 - 21, Math.random() * 300);
+				geometry.rotateX( fakeRand(11 + i) * 2 * Math.PI );
+				geometry.rotateY( fakeRand(12 + i) * 2 * Math.PI );
+				geometry.translate( fakeRand(-4 + i) * 300, -fakeRand(5 + i)  * 80 - 21, fakeRand(3 + i) * 300);
 				geometry.translate(0, -40, 0);
 
 				var material = new THREE.MeshStandardMaterial({ metalness: 0, shininess: 0, roughness: 1, color: 0xCB7080, overdraw: 0.5 });
