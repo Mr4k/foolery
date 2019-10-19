@@ -18,40 +18,47 @@ const ORIENTATION_DIRECTIONS = {
   DOWN: 2,
 }
 
-// TODO (Peter) replace the dependency on THREE.js for the axis angle rotations
-function createOrientationController(THREE, stepAmount = 1) {
-  const orientations = [
-    { x: 1, y: 0, z: 0 },
-    { x: 0, y: -1, z: 0 },
-    { x: 0, y: 0, z: 1 },
-  ];
+const ORIENTATIONS = [
+  { x: 1, y: 0, z: 0 },
+  { x: 0, y: -1, z: 0 },
+  { x: 0, y: 0, z: 1 },
+];
+
+// TODO (Peter) replace the dependency on THREE.js for the axis angle rotations and quarternions
+function getOrientations(THREE, quaternion) {
+  return ORIENTATIONS.map(orientation => {
+    const threeOrientation = new THREE.Vector3(orientation.x, orientation.y, orientation.z);
+    threeOrientation.applyQuaternion(quaternion);
+    return threeOrientation;
+  })
+}
+
+function createOrientationController(THREE) {
+  const internalQuaternion = new THREE.Quaternion();
+  let internalDown = ORIENTATIONS[ORIENTATION_DIRECTIONS.DOWN];
   return {
-    getOrientation: orientation => orientations[orientation],
+    getQuaternion: () => internalQuaternion.clone().conjugate(),
     update: down => {
       const ret = calculateOrientationDeltaAxisAndAngle(
-        orientations[ORIENTATION_DIRECTIONS.DOWN],
+        internalDown,
         down
       );
       if (!ret) return;
 
       const { axis, angle } = ret;
-      orientations.forEach((orientation, index) => {
-        const threeOrientationVector = new THREE.Vector3(
-          orientation.x,
-          orientation.y,
-          orientation.z);
-				threeOrientationVector.applyAxisAngle(axis, -angle * stepAmount);
-				orientations[index] = {
-          x: threeOrientationVector.x,
-          y: threeOrientationVector.y,
-          z: threeOrientationVector.z,
-        };
-      });
+      const threeAxis = new THREE.Vector3(axis.x, axis.y, axis.z);
+
+      const updateQuaternion = new THREE.Quaternion();
+      updateQuaternion.setFromAxisAngle(threeAxis, angle);
+
+      internalQuaternion.multiply(updateQuaternion);
+      internalDown = down;
     },
   }
 }
 
 module.exports = {
   createOrientationController,
+  getOrientations,
   ORIENTATION_DIRECTIONS,
 }

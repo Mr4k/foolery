@@ -48,8 +48,8 @@
 			z: 0,
 		};
 
+		let cameraQuaternion = new THREE.Quaternion();
 		let orientationController = game.orientationController.createOrientationController(THREE);
-		let cameraOrientationController = game.orientationController.createOrientationController(THREE, 1);
 
 		let keysDown = {
 			'ArrowUp': 0,
@@ -283,9 +283,10 @@
 				keyAcceleration = keyAcceleration || { x: 0, y: 0, z: 0 };
 				const moveAxisAndDir = MOVE_AXIS_AND_DIRS_FOR_KEY[key];
 				keyAcceleration = geom.add(keyAcceleration, geom.scale(
-					orientationController.getOrientation(
-						moveAxisAndDir.axis
-					),
+					game.orientationController.getOrientations(
+						THREE,
+						orientationController.getQuaternion()
+					)[moveAxisAndDir.axis],
 					0.5 * moveAxisAndDir.dir,
 				));
 			});
@@ -306,7 +307,7 @@
 			var triangles = planes.reduce((res, plane) => res.concat(faceToTri(plane.geometry)), []);
 
 			const { newOrigin, totalNormalForce, totalFrictionForce } = phys.moveAndSlide(playerPosition, 20, playerVelocity,
-				triangles, 1, 3, 0.5,
+				triangles, 1, 3, 0.01,
 			);
 
 			playerPosition = newOrigin;
@@ -317,25 +318,26 @@
 			const grav = geom.scale(down, 0.04);
 
 			orientationController.update(down);
-			cameraOrientationController.update(down);
 
 			playerVelocity = geom.add(playerVelocity, grav);
 
 			const backAmount = 250;
 			const upAmount = 175;
-			const camBack = geom.scale(cameraOrientationController.getOrientation(
-				game.orientationController.ORIENTATION_DIRECTIONS.FORWARD
-			), -1 * backAmount);
-			const camUp = geom.scale(cameraOrientationController.getOrientation(
-				game.orientationController.ORIENTATION_DIRECTIONS.DOWN
-			), -1 * upAmount);
+			cameraQuaternion = cameraQuaternion.slerp(orientationController.getQuaternion(), 0.02);
+			const orientations = game.orientationController.getOrientations(THREE, cameraQuaternion);
+			const camBack = geom.scale(
+				orientations[game.orientationController.ORIENTATION_DIRECTIONS.FORWARD]
+			, -1 * backAmount);
+			const camUp = geom.scale(
+				orientations[game.orientationController.ORIENTATION_DIRECTIONS.DOWN]
+			, -1 * upAmount);
 			const camPos = geom.add(playerPosition, geom.add(camBack, camUp));
 			camera.position.x = camPos.x;
 			camera.position.y = camPos.y;
 			camera.position.z = camPos.z;
-			const up = geom.scale(cameraOrientationController.getOrientation(
-				game.orientationController.ORIENTATION_DIRECTIONS.DOWN
-			), -1);
+			const up = geom.scale(
+				orientations[game.orientationController.ORIENTATION_DIRECTIONS.DOWN]
+			, -1);
 			camera.up = new THREE.Vector3(up.x, up.y, up.z);
 			camera.lookAt(playerPosition.x, playerPosition.y, playerPosition.z);
 			camera.updateMatrixWorld();

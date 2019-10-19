@@ -15,7 +15,6 @@ function moveAndSlide(origin, radius, velocity, triangles, stepSize = 1, depth =
 	for (let triangle of triangles) {
 		const intersection = geom.sphereHitsTriangle(origin, velocity,
 			radius, triangle);
-		if (intersection && Math.abs(intersection.t) < EPSILON * 10) console.log(intersection.t);
 		if (intersection && intersection.t >= 0 && intersection.t < minT) {
 			minN = intersection.n;
 			minT = intersection.t;
@@ -23,7 +22,6 @@ function moveAndSlide(origin, radius, velocity, triangles, stepSize = 1, depth =
 	}
 
 	minT = Math.min(Math.max(minT - EPSILON, 0), stepSize);
-	console.log(minT, 'minT');
 
 	const move = geom.add(origin, geom.scale(velocity, minT));
 
