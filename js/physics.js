@@ -1,5 +1,5 @@
 const geom = require('./geometry/triangle');
-const EPSILON = 0.0001;
+const EPSILON = 0.0000;
 
 function calculateSlide(velocity, t, tMax, normal) {
 	const scaledV = geom.scale(velocity, tMax - t);
