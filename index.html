@@ -99,6 +99,9 @@
 			function fakeRand (offset) {
 				return (Math.sin(seed + offset) + 1) / 2;
 			}
+
+			material = new THREE.MeshStandardMaterial({ metalness: 0, shininess: 0, roughness: 1, color: 0xCB7080, overdraw: 0.5, side: THREE.doubleSide });
+
 			for (let i = 0; i < 10; i++) {
 				//const geometry = asteroid.generateAsteroid(THREE, 50);
 				//const geometry = new THREE.BoxGeometry(280, 180, 280);
@@ -107,15 +110,26 @@
 				geometry.rotateX( fakeRand(11 + i) * 2 * Math.PI );
 				geometry.rotateY( fakeRand(12 + i) * 2 * Math.PI );
 				geometry.translate( fakeRand(-4 + i) * 300, -fakeRand(5 + i)  * 80 - 21, fakeRand(3 + i) * 300);
-				geometry.translate(0, -40, 0);
-
-				var material = new THREE.MeshStandardMaterial({ metalness: 0, shininess: 0, roughness: 1, color: 0xCB7080, overdraw: 0.5 });
+				geometry.translate(-10, -40, -50);
 
 				plane = new THREE.Mesh(geometry, material);
 				planes.push(plane);
 				scene.add(plane);
 				plane.geometry.verticesNeedUpdate = true;
 			}
+
+			const radius = 240;
+			const tube = 40;
+			const radialSegments = 8;
+			const tubularSegments = 128;
+			const p = 2;
+			const q = 3;
+			const tubeGeometry = new THREE.TorusKnotGeometry(radius, tube, tubularSegments, radialSegments, p, q);
+
+			plane = new THREE.Mesh(tubeGeometry, material);
+			planes.push(plane);
+			scene.add(plane);
+			plane.geometry.verticesNeedUpdate = true;
 
 			//console.log(planes);
 
@@ -134,10 +148,13 @@
 			ambientLight.intensity = 0.4;
 			scene.add(ambientLight);
 
-			renderer = new THREE.WebGLRenderer();
+			renderer = new THREE.WebGLRenderer({
+				alpha: true,
+			});
 			renderer.setPixelRatio(window.devicePixelRatio);
 			renderer.setSize(window.innerWidth, window.innerHeight);
 			container.appendChild(renderer.domElement);
+			game.transparentOccluder.setup(THREE, window.innerWidth, window.innerHeight);
 
 			stats = new Stats();
 			container.appendChild(stats.dom);
@@ -307,7 +324,7 @@
 			var triangles = planes.reduce((res, plane) => res.concat(faceToTri(plane.geometry)), []);
 
 			const { newOrigin, totalNormalForce, totalFrictionForce } = phys.moveAndSlide(playerPosition, 20, playerVelocity,
-				triangles, 1, 10, 0.01,
+				triangles, 1, 10, 0.1,
 			);
 
 			playerPosition = newOrigin;
@@ -341,8 +358,12 @@
 			camera.up = new THREE.Vector3(up.x, up.y, up.z);
 			camera.lookAt(playerPosition.x, playerPosition.y, playerPosition.z);
 			camera.updateMatrixWorld();
-
-			renderer.render(scene, camera);
+			const camToPlayer = geom.sub(camera.position, playerPosition);
+			const distToPlayer = Math.sqrt(geom.dot(camToPlayer, camToPlayer)) - 24;
+			game.transparentOccluder.render(THREE, renderer, scene, camera, distToPlayer);
+			//camera.near = distToPlayer;
+			//camera.updateProjectionMatrix();
+			//renderer.render(scene, camera);
 
 		}
 

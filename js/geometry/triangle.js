@@ -1,4 +1,4 @@
-const EPSILON = 0.000001;
+const EPSILON = 0.000000;
 
 function vector(x, y, z) {
 	return {

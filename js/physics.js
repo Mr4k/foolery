@@ -6,6 +6,7 @@ function calculateSlide(velocity, t, tMax, normal) {
 	return geom.add(scaledV, geom.scale(normal, -geom.dot(scaledV, normal)));
 }
 
+// TODO (Peter) almost sure this can become one with the above function
 function calculateSlide2(velocity, t, tMax, normal) {
 	const scaledV = geom.scale(velocity, tMax - t);
 	return geom.add(scaledV, geom.scale(normal, -Math.min(geom.dot(scaledV, normal), 0)));
@@ -25,9 +26,6 @@ function moveAndSlide(origin, radius, originalVelocity, triangles, stepSize = 1,
 		updatedTotalNormalForce = geom.add(geom.scale(normal, normalForceMag), updatedTotalNormalForce);
 		return calculateSlide2(vel, 0, stepSize, normal);
 	}, originalVelocity);
-	//velocity = originalVelocity;
-	//console.log('vsc', vectorsToProjectAgainst, originalVelocity);
-	//filteredTriangles = triangles;
 	const filteredTriangles = triangles.filter(tri => !triangleIds.includes(tri.id));
 	// now search for further collisions
 
@@ -99,6 +97,11 @@ const getTrianglesWithinDist = (origin, triangles, withinDist) => triangles.redu
 	triangleIds: [],
 });
 
+// bad bad bad change this
+function isOnGround(origin, radius, triangles, withinDist = 0.01) {
+	return getTrianglesWithinDist(origin, triangles, withinDist + radius);
+}
+
 // TODO this function could be wayyyy more efficient
 function calculateGravityDirection(origin, triangles, exclusionDist = 100) {
 	const { grav, _minDist } = triangles.reduce(({ grav, minDist }, tri) => {
@@ -138,4 +141,5 @@ module.exports = {
 	moveAndSlide,
 	geom,
 	calculateGravityDirection,
+	isOnGround,
 }
