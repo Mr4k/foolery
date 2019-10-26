@@ -1,4 +1,4 @@
-const EPSILON = 0.00001;
+const EPSILON = 0.000001;
 
 function vector(x, y, z) {
 	return {
@@ -60,7 +60,10 @@ function normalize(v1) {
 // TODO make this function more efficient
 function triangle(v1, v2, v3) {
 	const normal = normalize(cross(sub(v1, v3), sub(v2, v3)));
+	// Note (Peter) use better rng source or deterministic ids in the future
+	const id = Math.floor(Math.random() * 100000000);
 	return {
+		id,
 		v1: v1,
 		v2: v2,
 		v3: v3,

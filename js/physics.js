@@ -6,13 +6,35 @@ function calculateSlide(velocity, t, tMax, normal) {
 	return geom.add(scaledV, geom.scale(normal, -geom.dot(scaledV, normal)));
 }
 
-function moveAndSlide(origin, radius, velocity, triangles, stepSize = 1, depth = 3, kineticFriction = 0.5, totalNormalForce = { x: 0, y: 0, z: 0 }, totalFrictionForce = { x: 0, y: 0, z: 0 }) {
+function calculateSlide2(velocity, t, tMax, normal) {
+	const scaledV = geom.scale(velocity, tMax - t);
+	return geom.add(scaledV, geom.scale(normal, -Math.min(geom.dot(scaledV, normal), 0)));
+}
+
+function moveAndSlide(origin, radius, originalVelocity, triangles, stepSize = 1, depth = 3, kineticFriction = 0.5, totalNormalForce = { x: 0, y: 0, z: 0 }, totalFrictionForce = { x: 0, y: 0, z: 0 }) {
 	if (depth === 0) return { newOrigin: origin, totalNormalForce, totalFrictionForce };
+
+	// we may start very close to some triangles, if we do assume we are automatically hitting them
+	// remove the part of our movement pointing that way right off of the bat
+
+	let updatedTotalNormalForce = totalNormalForce;
+
+	const { vectorsToProjectAgainst, triangleIds } = getTrianglesWithinDist(origin, triangles, radius + 1);
+	const velocity = vectorsToProjectAgainst.reduce((vel, normal) => {
+		const normalForceMag = -geom.dot(normal, vel);
+		updatedTotalNormalForce = geom.add(geom.scale(normal, normalForceMag), updatedTotalNormalForce);
+		return calculateSlide2(vel, 0, stepSize, normal);
+	}, originalVelocity);
+	//velocity = originalVelocity;
+	//console.log('vsc', vectorsToProjectAgainst, originalVelocity);
+	//filteredTriangles = triangles;
+	const filteredTriangles = triangles.filter(tri => !triangleIds.includes(tri.id));
+	// now search for further collisions
 
 	let minT = 10000000000;
 	let minN;
 
-	for (let triangle of triangles) {
+	for (let triangle of filteredTriangles) {
 		const intersection = geom.sphereHitsTriangle(origin, velocity,
 			radius, triangle);
 		if (intersection && intersection.t >= 0 && intersection.t < minT) {
@@ -24,15 +46,16 @@ function moveAndSlide(origin, radius, velocity, triangles, stepSize = 1, depth =
 	minT = Math.min(Math.max(minT - EPSILON, 0), stepSize);
 
 	const move = geom.add(origin, geom.scale(velocity, minT));
+	console.log({ newOrigin: move, totalNormalForce: updatedTotalNormalForce, totalFrictionForce });
 
-	if (!minN) return { newOrigin: move, totalNormalForce, totalFrictionForce };
+	if (!minN) return { newOrigin: move, totalNormalForce: updatedTotalNormalForce, totalFrictionForce };
 
 	const slide = calculateSlide(velocity, minT, stepSize, minN);
 
 	// TODO I'm sure this part could be improved / moved
 	// also test this
 	const normalForceMag = Math.abs(geom.dot(minN, velocity)) * (1 - minT);
-	const updatedTotalNormalForce = geom.add(totalNormalForce, geom.scale(minN, normalForceMag));
+	updatedTotalNormalForce = geom.add(updatedTotalNormalForce, geom.scale(minN, normalForceMag));
 
 	const slideMag = Math.sqrt(geom.dot(slide, slide));
 	const frictionAmount = Math.max(slideMag - normalForceMag * kineticFriction, 0) / (slideMag === 0 ? 1 : slideMag);
@@ -44,6 +67,37 @@ function moveAndSlide(origin, radius, velocity, triangles, stepSize = 1, depth =
 
 	return moveAndSlide(move, radius, postFrictionSlide, triangles, stepSize, depth - 1, kineticFriction, updatedTotalNormalForce, updatedTotalFrictionForce);
 }
+
+const getTrianglesWithinDist = (origin, triangles, withinDist) => triangles.reduce(({ vectorsToProjectAgainst, triangleIds }, tri) => {
+	let ret = geom.squaredDistToTriangle(origin, tri);
+	if (!ret) return {
+		vectorsToProjectAgainst,
+		triangleIds,
+	};
+
+	const { dist, dir } = ret;
+	
+	if (dist < withinDist * withinDist) {
+		triangleIds.push(tri.id);
+		// gram schmit!!!!!!
+		let finalDir = dir;
+		vectorsToProjectAgainst.forEach(vec => {
+			const proj = Math.min(geom.dot(finalDir, vec), 0);
+			finalDir = geom.add(finalDir, geom.scale(vec, -proj));
+		});
+		if (finalDir.x !== 0 || finalDir.y !== 0 || finalDir.z !== 0){
+			vectorsToProjectAgainst.push(geom.normalize(finalDir));	
+		};
+	}
+
+	return {
+		vectorsToProjectAgainst,
+		triangleIds
+	};
+}, {
+	vectorsToProjectAgainst: [],
+	triangleIds: [],
+});
 
 // TODO this function could be wayyyy more efficient
 function calculateGravityDirection(origin, triangles, exclusionDist = 100) {
